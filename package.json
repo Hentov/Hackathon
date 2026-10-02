@@ -19,7 +19,9 @@
   },
   "homepage": "https://github.com/Hentov/Hackathon#readme",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.3",
+    "cors": "^2.8.6",
     "express": "^5.2.1"
   }
 }
