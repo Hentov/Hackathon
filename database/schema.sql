@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
+  username TEXT NOT NULL UNIQUE COLLATE NOCASE,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'renter' CHECK (role IN ('renter','owner')),

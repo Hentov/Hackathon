@@ -1,4 +1,9 @@
 const db = require("./db");
+const bcrypt = require("bcryptjs");
+const demoHash = bcrypt.hashSync("demo1234", 10);
+
+// Round money to 2 decimals so we never store values like 2.5499999999999998
+const money = (n) => Number(n.toFixed(2));
 
 // Clear existing demo data so the seed can be safely re-run.
 // Delete in reverse dependency order.
@@ -14,43 +19,48 @@ db.exec(`
 // --------------------------------------------------
 
 const insertUser = db.prepare(`
-  INSERT INTO users (name, email, password_hash, role, description)
-  VALUES (?, ?, ?, ?, ?)
+  INSERT INTO users (name, username, email, password_hash, role, description)
+  VALUES (?, ?, ?, ?, ?, ?)
 `);
 
 const owners = [
   {
     name: "Alex Morgan",
+    username: "alex_morgan",
     email: "alex@example.com",
-    password_hash: "demo_hash",
+    password_hash: demoHash,
     role: "owner",
     description: "AI developer with a powerful home workstation.",
   },
   {
     name: "Sofia Ivanova",
+    username: "sofia_ivanova",
     email: "sofia@example.com",
-    password_hash: "demo_hash",
+    password_hash: demoHash,
     role: "owner",
     description: "Freelance 3D artist renting out unused GPU capacity.",
   },
   {
     name: "Daniel Petroff",
+    username: "daniel_petroff",
     email: "daniel@example.com",
-    password_hash: "demo_hash",
+    password_hash: demoHash,
     role: "owner",
     description: "Machine learning enthusiast with several GPUs.",
   },
   {
     name: "Maya Chen",
+    username: "maya_chen",
     email: "maya@example.com",
-    password_hash: "demo_hash",
+    password_hash: demoHash,
     role: "owner",
     description: "Software engineer with spare computing capacity.",
   },
   {
     name: "Victor Rossi",
+    username: "victor_rossi",
     email: "victor@example.com",
-    password_hash: "demo_hash",
+    password_hash: demoHash,
     role: "owner",
     description: "Game developer who shares his workstation when idle.",
   },
@@ -61,6 +71,7 @@ const ownerIds = {};
 for (const owner of owners) {
   const result = insertUser.run(
     owner.name,
+    owner.username,
     owner.email,
     owner.password_hash,
     owner.role,
@@ -77,15 +88,17 @@ for (const owner of owners) {
 const renters = [
   {
     name: "Emma Wilson",
+    username: "emma_wilson",
     email: "emma@example.com",
-    password_hash: "demo_hash",
+    password_hash: demoHash,
     role: "renter",
     description: "AI student experimenting with machine learning.",
   },
   {
     name: "Liam Brown",
+    username: "liam_brown",
     email: "liam@example.com",
-    password_hash: "demo_hash",
+    password_hash: demoHash,
     role: "renter",
     description: "Indie developer working on a computer vision project.",
   },
@@ -96,6 +109,7 @@ const renterIds = {};
 for (const renter of renters) {
   const result = insertUser.run(
     renter.name,
+    renter.username,
     renter.email,
     renter.password_hash,
     renter.role,
@@ -284,7 +298,7 @@ const booking1 = insertBooking.run(
   gpuIds[0],
   "2026-10-01 18:00",
   "2026-10-01 21:00",
-  0.85 * 3,
+  money(0.85 * 3),
   "completed"
 );
 
@@ -293,7 +307,7 @@ const booking2 = insertBooking.run(
   gpuIds[4],
   "2026-10-01 14:00",
   "2026-10-01 18:00",
-  0.45 * 4,
+  money(0.45 * 4),
   "completed"
 );
 
@@ -302,7 +316,7 @@ const booking3 = insertBooking.run(
   gpuIds[8],
   "2026-10-02 19:00",
   "2026-10-02 22:00",
-  0.25 * 3,
+  money(0.25 * 3),
   "paid"
 );
 
