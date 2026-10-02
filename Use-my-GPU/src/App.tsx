@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import Login from './components/Login';
+import Login, { type UserData } from './components/Login';
 import Dashboard, { type GpuItem } from './components/Dashboard';
 
 function App() {
-  const [user, setUser] = useState<{ email: string } | null>(null);
+  const [user, setUser] = useState<UserData | null>(null);
 
-  const handleLogin = (userData: { email: string }) => {
+  const handleLogin = (userData: UserData) => {
     setUser(userData);
   };
 
