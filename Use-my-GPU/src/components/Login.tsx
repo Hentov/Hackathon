@@ -25,7 +25,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [regUsername, setRegUsername] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
-  const [role, setRole] = useState('user'); // Default role
 
   const [error, setError] = useState('');
 
@@ -66,7 +65,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     e.preventDefault();
     setError('');
 
-    if (!firstName || !lastName || !regUsername || !regEmail || !regPassword || !role) {
+    if (!firstName || !lastName || !regUsername || !regEmail || !regPassword) {
       setError('Please fill in all fields.');
       return;
     }
@@ -87,7 +86,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           username: regUsername,
           email: regEmail,
           password: regPassword,
-          role: role
+          role: 'user' // Твърдо зададена роля по подразбиране
         }),
       });
 
@@ -204,17 +203,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 placeholder="********"
                 style={styles.input}
               />
-            </div>
-            <div style={styles.inputGroup}>
-              <label>Role</label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                style={styles.input}
-              >
-                <option value="user">User (Rent GPU)</option>
-                <option value="provider">Provider (Share GPU)</option>
-              </select>
             </div>
             <button type="submit" style={styles.submitBtn}>
               Register

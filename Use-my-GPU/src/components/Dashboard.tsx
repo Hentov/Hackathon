@@ -23,9 +23,9 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onSelectGpu }) => {
-  const [selectedType, setSelectedType] = useState('Всички');
+  const [selectedType, setSelectedType] = useState('All');
 
-  const filteredGpus = selectedType === 'Всички' 
+  const filteredGpus = selectedType === 'All' 
     ? MOCK_GPUS 
     : MOCK_GPUS.filter(gpu => gpu.type === selectedType);
 
@@ -37,30 +37,30 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onSelectGpu }) =>
       <header style={styles.header}>
         <h1>GPU SHARE</h1>
         <div>
-          <span style={{ marginRight: '15px' }}>Здравей, {user.email}</span>
-          <button onClick={onLogout} style={styles.logoutBtn}>Изход</button>
+          <span style={{ marginRight: '15px' }}>Hello, {user.email}</span>
+          <button onClick={onLogout} style={styles.logoutBtn}>Logout</button>
         </div>
       </header>
 
       <section style={styles.statsSection}>
         <div style={styles.statCard}>
-          <h3>Налични GPU</h3>
-          <p>{totalAvailableGpus} броя</p>
+          <h3>Available GPUs</h3>
+          <p>{totalAvailableGpus} units</p>
         </div>
         <div style={styles.statCard}>
-          <h3>Общо налични часове</h3>
-          <p>{totalHours} часа</p>
+          <h3>Total Available Hours</h3>
+          <p>{totalHours} hours</p>
         </div>
       </section>
 
       <div style={styles.floatingMenu}>
-        <label style={{ fontWeight: 'bold' }}>Изберете модел GPU: </label>
+        <label style={{ fontWeight: 'bold' }}>Select GPU model: </label>
         <select 
           value={selectedType} 
           onChange={(e) => setSelectedType(e.target.value)}
           style={styles.select}
         >
-          <option value="Всички">Всички модели</option>
+          <option value="All">All models</option>
           <option value="RTX 4070">RTX 4070</option>
           <option value="RTX 4080">RTX 4080</option>
           <option value="RTX 4090">RTX 4090</option>
@@ -74,12 +74,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onSelectGpu }) =>
             <img src={gpu.image} alt={gpu.type} style={styles.cardImg} />
             <div style={styles.cardBody}>
               <h3>{gpu.type}</h3>
-              <p style={styles.price}>Цена: €{gpu.price.toFixed(2)} / час</p>
+              <p style={styles.price}>Price: €{gpu.price.toFixed(2)} / hour</p>
               <button 
                 onClick={() => onSelectGpu(gpu)} 
                 style={styles.detailsBtn}
               >
-                Преглед на обявата
+                View Details
               </button>
             </div>
           </div>
