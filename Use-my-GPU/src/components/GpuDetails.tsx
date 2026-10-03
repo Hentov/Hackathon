@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { GpuItem } from './Dashboard';
+import { onImgError, type GpuItem } from './Dashboard';
 
 interface GpuDetailsProps {
   gpu: GpuItem;
@@ -14,18 +14,12 @@ const GpuDetails: React.FC<GpuDetailsProps> = ({ gpu, onBack, onPay }) => {
 
   // Изчисляване на крайната цена
   const totalPrice = gpu.price * rentHours;
+  // Енергия = мощност (W) x часове / 1000
+  const energyKwh = (gpu.powerW * rentHours) / 1000;
 
   const handlePayment = () => {
     setIsPaid(true);
     onPay(totalPrice, rentHours);
-  };
-
-  // Генерираме примерни допълнителни данни на база на типа карта
-  const getGpuSpecs = (type: string) => {
-    if (type.includes('4090')) return '24GB GDDR6X, 16384 CUDA Cores';
-    if (type.includes('4080')) return '16GB GDDR6X, 9728 CUDA Cores';
-    if (type.includes('A100')) return '80GB HBM2e, Оптимизирана за AI/ML';
-    return '12GB GDDR6X, Отлична за базов рендеринг и гейминг';
   };
 
   return (
@@ -38,18 +32,25 @@ const GpuDetails: React.FC<GpuDetailsProps> = ({ gpu, onBack, onPay }) => {
         <div style={styles.grid}>
           {/* Лява колона: Снимка и Спецификации */}
           <div>
-            <img src={gpu.image} alt={gpu.type} style={styles.image} />
+            <img src={gpu.image} alt={gpu.type} onError={onImgError} style={styles.image} />
             <h2 style={styles.title}>{gpu.type}</h2>
             
             <div style={styles.infoBox}>
               <h4 style={styles.infoTitle}>Технически характеристики:</h4>
-              <p style={styles.infoText}>{getGpuSpecs(gpu.type)}</p>
+              <p style={styles.infoText}>{gpu.vramGb} GB VRAM · {gpu.powerW} W</p>
+            </div>
+
+            <div style={styles.infoBox}>
+              <h4 style={styles.infoTitle}>Собственик:</h4>
+              <p style={styles.infoText}>
+                {gpu.ownerUsername} · {gpu.ownerRating ? `★ ${gpu.ownerRating} / 5` : 'Още няма оценки'}
+              </p>
             </div>
 
             <div style={styles.infoBox}>
               <h4 style={styles.infoTitle}>Наличност и График:</h4>
               <p style={styles.infoText}>
-                🟢 <strong>Свободна за наемане:</strong> Днес от 08:00 до 22:00 ч.
+                🟢 <strong>Свободна за наемане:</strong> Всеки ден от {gpu.availableFrom} до {gpu.availableTo} ч.
               </p>
               <p style={styles.infoText}>
                 Максимално време за наемане: <strong>{gpu.availableHours} часа</strong>
@@ -73,9 +74,16 @@ const GpuDetails: React.FC<GpuDetailsProps> = ({ gpu, onBack, onPay }) => {
                 min="1" 
                 max={gpu.availableHours} 
                 value={rentHours} 
-                onChange={(e) => setRentHours(Number(e.target.value))}
+                onChange={(e) =>
+                  setRentHours(Math.min(gpu.availableHours, Math.max(1, Number(e.target.value) || 1)))
+                }
                 style={styles.input}
               />
+            </div>
+
+            <div style={styles.priceRow}>
+              <span>Консумирана енергия:</span>
+              <span>{energyKwh.toFixed(2)} kWh</span>
             </div>
 
             <div style={styles.totalRow}>
