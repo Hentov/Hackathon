@@ -18,6 +18,29 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ totalAmount, onBack, onSucces
     onSuccess();
   };
 
+  // Форматиране на номера на картата (интервал на всеки 4 цифри)
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, ''); // Премахва всичко, което не е цифра
+    const formattedValue = value.match(/.{1,4}/g)?.join(' ') || '';
+    setCardNumber(formattedValue);
+  };
+
+  // Форматиране на датата на изтичане (MM/YY)
+  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, ''); // Премахва всичко, което не е цифра
+    if (value.length > 2) {
+      setExpiry(`${value.substring(0, 2)}/${value.substring(2, 4)}`);
+    } else {
+      setExpiry(value);
+    }
+  };
+
+  // Форматиране на CVV (само цифри)
+  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    setCvv(value);
+  };
+
   return (
     <div style={styles.container}>
       <button onClick={onBack} style={styles.backBtn}>
@@ -46,10 +69,10 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ totalAmount, onBack, onSucces
             <input 
               type="text" 
               required 
-              maxLength={19}
+              maxLength={19} // 16 цифри + 3 интервала
               placeholder="0000 0000 0000 0000"
               value={cardNumber}
-              onChange={(e) => setCardNumber(e.target.value)}
+              onChange={handleCardNumberChange}
               style={styles.input}
             />
           </div>
@@ -60,10 +83,10 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ totalAmount, onBack, onSucces
               <input 
                 type="text" 
                 required 
-                maxLength={5}
+                maxLength={5} // 4 цифри + 1 наклонена черта
                 placeholder="MM/YY"
                 value={expiry}
-                onChange={(e) => setExpiry(e.target.value)}
+                onChange={handleExpiryChange}
                 style={styles.input}
               />
             </div>
@@ -76,7 +99,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ totalAmount, onBack, onSucces
                 maxLength={3}
                 placeholder="123"
                 value={cvv}
-                onChange={(e) => setCvv(e.target.value)}
+                onChange={handleCvvChange}
                 style={styles.input}
               />
             </div>

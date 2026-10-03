@@ -2,14 +2,16 @@ import { useState } from 'react';
 import Login, { type UserData } from './components/Login';
 import Dashboard, { type GpuItem } from './components/Dashboard';
 import GpuDetails from './components/GpuDetails';
-import PaymentPage from './components/PaymentPage'; // Импортираме новата страница за плащане
+import PaymentPage from './components/PaymentPage';
+import SuccessPage from './components/SuccessPage'; // Импортираме новата страница за успех
 
 function App() {
   const [user, setUser] = useState<UserData | null>(null);
   const [selectedGpu, setSelectedGpu] = useState<GpuItem | null>(null);
-  
-  // Ново състояние за данните за плащане. Ако не е null, показваме PaymentPage.
   const [paymentData, setPaymentData] = useState<{ total: number; hours: number } | null>(null);
+  
+  // Ново състояние за показване на екрана за успех
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleLogin = (userData: UserData) => {
     setUser(userData);
@@ -19,6 +21,7 @@ function App() {
     setUser(null);
     setSelectedGpu(null);
     setPaymentData(null);
+    setIsSuccess(false);
   };
 
   const handleSelectGpu = (gpu: GpuItem) => {
@@ -29,16 +32,24 @@ function App() {
     <div>
       {!user ? (
         <Login onLogin={handleLogin} />
+      ) : isSuccess ? (
+        /* Стъпка 4: Успешно плащане и детайли за свързване */
+        <SuccessPage 
+          onHome={() => {
+            // Връщане към началния екран (Dashboard)
+            setIsSuccess(false);
+            setSelectedGpu(null);
+          }}
+        />
       ) : paymentData ? (
         /* Стъпка 3: Страница за плащане с карта */
         <PaymentPage 
           totalAmount={paymentData.total}
-          onBack={() => setPaymentData(null)} // Връща назад към детайлите за картата
+          onBack={() => setPaymentData(null)}
           onSuccess={() => {
-            alert(`Payment of €${paymentData.total.toFixed(2)} successful! Machine booked for ${paymentData.hours} hours.`);
-            // След успешно плащане се връщаме в самото начало (Dashboard)
+            // При успешно плащане преминаваме към екрана за успех
             setPaymentData(null);
-            setSelectedGpu(null);
+            setIsSuccess(true);
           }}
         />
       ) : selectedGpu ? (
@@ -47,7 +58,6 @@ function App() {
           gpu={selectedGpu} 
           onBack={() => setSelectedGpu(null)} 
           onPay={(total, hours) => {
-            // Вместо alert, тук запазваме сумата и часовете, което автоматично отваря PaymentPage
             setPaymentData({ total, hours });
           }} 
         />
@@ -59,7 +69,6 @@ function App() {
           onSelectGpu={handleSelectGpu} 
         />
       )}
-      
     </div>
   );
 }
