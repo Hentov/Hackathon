@@ -305,6 +305,11 @@ const CONNECT_HOST = process.env.CONNECT_HOST || "198.51.100.24";
 const token = (label, bookingId) =>
   crypto.createHmac("sha256", CONNECT_SECRET).update(label + ":" + bookingId).digest("hex").slice(0, 10);
 
+const anydeskId = (gpuId) => {
+  const n = String(parseInt(token("id", gpuId), 16) % 1000000000).padStart(9, "0");
+  return `${n.slice(0, 3)} ${n.slice(3, 6)} ${n.slice(6)}`;
+};
+
 app.get("/api/bookings/:id/connection", (req, res) => {
   const userId = Number(req.query.user_id);
   const b = db.prepare("SELECT * FROM bookings WHERE id = ?").get(req.params.id);
@@ -318,6 +323,9 @@ app.get("/api/bookings/:id/connection", (req, res) => {
   if (b.end_time <= now) {
     return res.status(410).json({ error: "This rental has ended, the connection details are no longer available" });
   }
+  if (b.start_time > now) {
+    return res.status(403).json({ error: `The connection details appear when your rental starts (${b.start_time}).` });
+  }
   const real = db
     .prepare("SELECT conn_jupyter_url, conn_jupyter_token, conn_ssh_command, conn_ssh_password FROM gpus WHERE id = ?")
     .get(b.gpu_id);
@@ -330,10 +338,11 @@ app.get("/api/bookings/:id/connection", (req, res) => {
     host: CONNECT_HOST,
     ssh_user: `gpu${b.gpu_id}`,
     ssh_port: 2200 + b.gpu_id,
-    ssh_command: `ssh gpu${b.gpu_id}@${CONNECT_HOST} -p ${2200 + b.gpu_id}`,
+    // GPUs without saved remote access get a stable AnyDesk-style ID and password
+    ssh_command: anydeskId(b.gpu_id),
     password: token("pw", b.id),
-    jupyter_url: `http://${CONNECT_HOST}:${8800 + b.gpu_id}`,
-    jupyter_token: token("jt", b.id),
+    jupyter_url: "",
+    jupyter_token: "",
     demo: true,
   };
   if (hasReal) {

@@ -43,6 +43,7 @@ const ConnectionDetails: React.FC<Props> = ({ bookingId, userId }) => {
       .catch((e: Error) => setError(e.message));
   }, [bookingId, userId]);
 
+  if (error.startsWith('The connection details appear')) return <p className="small">{error}</p>;
   if (error) return <div className="err">{error}</div>;
   if (!conn) return <p className="small">Loading connection details...</p>;
 
@@ -53,22 +54,11 @@ const ConnectionDetails: React.FC<Props> = ({ bookingId, userId }) => {
           ? `Connected rental, active until ${conn.end_time}.`
           : `Starts ${conn.start_time} and ends ${conn.end_time}. The details are ready now.`}
       </p>
-      {conn.demo ? (
-        <>
-          <Field label="SSH command" value={conn.ssh_command} />
-          <Field label="Password" value={conn.password} />
-          <Field label="Jupyter Notebook address" value={conn.jupyter_url} />
-          <Field label="Jupyter token" value={conn.jupyter_token} />
-        </>
-      ) : (
-        <>
-          <p className="state">Open AnyDesk (or Chrome Remote Desktop) on your computer and connect with this ID.</p>
-          <Field label="Remote access ID" value={conn.ssh_command} />
-          <Field label="Password" value={conn.password} />
-          <Field label="Jupyter Notebook address" value={conn.jupyter_url} />
-          <Field label="Jupyter token" value={conn.jupyter_token} />
-        </>
-      )}
+      <p className="state">Open AnyDesk (or Chrome Remote Desktop) on your computer and connect with this ID.</p>
+      <Field label="Remote access ID" value={conn.ssh_command} />
+      <Field label="Password" value={conn.password} />
+      <Field label="Jupyter Notebook address" value={conn.jupyter_url} />
+      <Field label="Jupyter token" value={conn.jupyter_token} />
     </div>
   );
 };

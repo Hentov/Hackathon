@@ -194,7 +194,7 @@ const HostPage: React.FC<Props> = ({ user }) => {
             <h3 style={{ marginTop: 26 }}>Remote access (optional)</h3>
             <p className="small" style={{ marginBottom: 6 }}>
               Install AnyDesk or Chrome Remote Desktop on your PC and enter the ID it shows. Renters see
-              it only during their booking. Leave it empty to show demo values.
+              it only during their booking.
             </p>
             <label htmlFor="ssh">Remote access ID</label>
             <input id="ssh" maxLength={300} placeholder="AnyDesk ID: 123 456 789" value={sshCmd} onChange={(e) => setSshCmd(e.target.value)} />
@@ -219,7 +219,7 @@ const HostPage: React.FC<Props> = ({ user }) => {
               <p className="small" style={{ margin: '6px 0 8px' }}>
                 {g.vram_gb} GB memory, {g.power_w} W, free {g.available_from} to {g.available_to}.{' '}
                 {g.upcoming_bookings} upcoming {g.upcoming_bookings === 1 ? 'booking' : 'bookings'}.{' '}
-                {g.has_connection ? 'Real connection saved.' : 'Demo connection.'}
+                {g.has_connection ? 'Real connection saved.' : 'No remote access saved yet.'}
               </p>
               <Strip from={g.available_from} to={g.available_to} />
               <AccessEditor key={`${g.id}-${g.conn_ssh_command}-${g.conn_ssh_password}`} gpu={g} userId={user.id} onSaved={loadMine} />

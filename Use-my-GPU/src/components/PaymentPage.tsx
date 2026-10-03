@@ -66,7 +66,6 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ user, gpu, draft, onBack, onP
       <div className="narrow">
         <button className="back" onClick={onBack} disabled={busy}>&#8592; Back to details</button>
 
-        <div className="note">Demo mode: no real payment is made.</div>
 
         <div className="slip">
           <h3>Checkout</h3>
