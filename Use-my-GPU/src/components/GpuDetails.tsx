@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { GpuItem } from './Dashboard';
+//import { GpuItem } from './Dashboard';
+import type { GpuItem } from './Dashboard';
 
 export interface GpuDetailsItem extends GpuItem {
   ram: string;

@@ -17,7 +17,7 @@ const MOCK_GPUS: GpuItem[] = [
 ];
 
 interface DashboardProps {
-  user: { email: string };
+  user: { username: string }; // ПРОМЯНА: сменихме email на username
   onLogout: () => void;
   onSelectGpu: (gpu: GpuItem) => void;
 }
@@ -37,7 +37,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onSelectGpu }) =>
       <header style={styles.header}>
         <h1>GPU SHARE</h1>
         <div>
-          <span style={{ marginRight: '15px' }}>Hello, {user.email}</span>
+          {/* ПРОМЯНА: тук вече се извиква user.username */}
+          <span style={{ marginRight: '15px' }}>Hello, {user.username}</span>
           <button onClick={onLogout} style={styles.logoutBtn}>Logout</button>
         </div>
       </header>
