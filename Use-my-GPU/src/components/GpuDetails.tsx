@@ -1,0 +1,236 @@
+import React, { useState } from 'react';
+import type { GpuItem } from './Dashboard';
+
+interface GpuDetailsProps {
+  gpu: GpuItem;
+  onBack: () => void;
+  // Функцията за плащане може да приема детайли за транзакцията
+  onPay: (totalPrice: number, hours: number) => void; 
+}
+
+const GpuDetails: React.FC<GpuDetailsProps> = ({ gpu, onBack, onPay }) => {
+  const [rentHours, setRentHours] = useState<number>(1);
+  const [isPaid, setIsPaid] = useState(false);
+
+  // Изчисляване на крайната цена
+  const totalPrice = gpu.price * rentHours;
+
+  const handlePayment = () => {
+    setIsPaid(true);
+    onPay(totalPrice, rentHours);
+  };
+
+  // Генерираме примерни допълнителни данни на база на типа карта
+  const getGpuSpecs = (type: string) => {
+    if (type.includes('4090')) return '24GB GDDR6X, 16384 CUDA Cores';
+    if (type.includes('4080')) return '16GB GDDR6X, 9728 CUDA Cores';
+    if (type.includes('A100')) return '80GB HBM2e, Оптимизирана за AI/ML';
+    return '12GB GDDR6X, Отлична за базов рендеринг и гейминг';
+  };
+
+  return (
+    <div style={styles.container}>
+      <button onClick={onBack} style={styles.backBtn}>
+        &#8592; Назад към всички GPU
+      </button>
+
+      <div style={styles.card}>
+        <div style={styles.grid}>
+          {/* Лява колона: Снимка и Спецификации */}
+          <div>
+            <img src={gpu.image} alt={gpu.type} style={styles.image} />
+            <h2 style={styles.title}>{gpu.type}</h2>
+            
+            <div style={styles.infoBox}>
+              <h4 style={styles.infoTitle}>Технически характеристики:</h4>
+              <p style={styles.infoText}>{getGpuSpecs(gpu.type)}</p>
+            </div>
+
+            <div style={styles.infoBox}>
+              <h4 style={styles.infoTitle}>Наличност и График:</h4>
+              <p style={styles.infoText}>
+                🟢 <strong>Свободна за наемане:</strong> Днес от 08:00 до 22:00 ч.
+              </p>
+              <p style={styles.infoText}>
+                Максимално време за наемане: <strong>{gpu.availableHours} часа</strong>
+              </p>
+            </div>
+          </div>
+
+          {/* Дясна колона: Ценообразуване и Плащане */}
+          <div style={styles.checkoutSection}>
+            <h3 style={styles.checkoutTitle}>Детайли за наемане</h3>
+            
+            <div style={styles.priceRow}>
+              <span>Цена на час:</span>
+              <span style={styles.highlightPrice}>€{gpu.price.toFixed(2)}</span>
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>За колко часа ще наемете машината?</label>
+              <input 
+                type="number" 
+                min="1" 
+                max={gpu.availableHours} 
+                value={rentHours} 
+                onChange={(e) => setRentHours(Number(e.target.value))}
+                style={styles.input}
+              />
+            </div>
+
+            <div style={styles.totalRow}>
+              <span>Обща сума:</span>
+              <span style={styles.totalPrice}>€{totalPrice.toFixed(2)}</span>
+            </div>
+
+            {isPaid ? (
+              <div style={styles.successMessage}>
+                ✅ Успешно плащане! Машината е резервирана за {rentHours} ч.
+              </div>
+            ) : (
+              <button onClick={handlePayment} style={styles.payBtn}>
+                Плати €{totalPrice.toFixed(2)}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const styles: { [key: string]: React.CSSProperties } = {
+  container: {
+    backgroundColor: '#0f172a',
+    color: '#fff',
+    minHeight: '100vh',
+    padding: '20px',
+  },
+  backBtn: {
+    padding: '10px 15px',
+    backgroundColor: '#334155',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    marginBottom: '20px',
+    fontWeight: 'bold',
+  },
+  card: {
+    backgroundColor: '#1e293b',
+    borderRadius: '12px',
+    padding: '30px',
+    border: '1px solid #334155',
+    maxWidth: '900px',
+    margin: '0 auto',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gap: '40px',
+  },
+  image: {
+    width: '100%',
+    height: '250px',
+    objectFit: 'cover',
+    borderRadius: '8px',
+    border: '1px solid #334155',
+  },
+  title: {
+    fontSize: '2rem',
+    color: '#38bdf8',
+    margin: '20px 0 10px 0',
+  },
+  infoBox: {
+    backgroundColor: '#0f172a',
+    padding: '15px',
+    borderRadius: '8px',
+    marginTop: '15px',
+  },
+  infoTitle: {
+    margin: '0 0 10px 0',
+    color: '#94a3b8',
+    fontSize: '1rem',
+  },
+  infoText: {
+    margin: '5px 0',
+    fontSize: '0.95rem',
+  },
+  checkoutSection: {
+    backgroundColor: '#0f172a',
+    padding: '25px',
+    borderRadius: '12px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+  },
+  checkoutTitle: {
+    marginTop: 0,
+    marginBottom: '20px',
+    borderBottom: '1px solid #334155',
+    paddingBottom: '10px',
+  },
+  priceRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: '1.2rem',
+    marginBottom: '20px',
+  },
+  highlightPrice: {
+    color: '#38bdf8',
+    fontWeight: 'bold',
+  },
+  inputGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    marginBottom: '25px',
+  },
+  label: {
+    marginBottom: '10px',
+    color: '#94a3b8',
+  },
+  input: {
+    padding: '12px',
+    borderRadius: '6px',
+    border: '1px solid #475569',
+    backgroundColor: '#1e293b',
+    color: '#fff',
+    fontSize: '1.1rem',
+    outline: 'none',
+  },
+  totalRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    marginBottom: '30px',
+    paddingTop: '15px',
+    borderTop: '1px solid #334155',
+  },
+  totalPrice: {
+    color: '#10b981',
+  },
+  payBtn: {
+    width: '100%',
+    padding: '15px',
+    backgroundColor: '#10b981',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '1.2rem',
+    fontWeight: 'bold',
+    transition: 'background-color 0.2s',
+  },
+  successMessage: {
+    backgroundColor: '#065f46',
+    color: '#a7f3d0',
+    padding: '15px',
+    borderRadius: '8px',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: '1.1rem',
+  }
+};
+
+export default GpuDetails;
