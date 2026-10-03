@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { Bolt } from './icons';
+import IdleChart from './IdleChart';
+import { API_URL } from '../api';
 
 export interface UserData {
   id: number;
@@ -7,6 +10,9 @@ export interface UserData {
   username: string;
   role: string;
 }
+
+// Decorative shape for the sign-in screen, not real data
+const DECOR = [2, 2, 1, 1, 1, 2, 3, 4, 6, 7, 8, 8, 7, 8, 9, 9, 8, 7, 6, 8, 10, 9, 6, 3];
 
 interface LoginProps {
   onLogin: (user: UserData) => void;
@@ -40,7 +46,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/login', {
+      const response = await fetch(`${API_URL}/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,7 +83,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/register', {
+      const response = await fetch(`${API_URL}/api/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,200 +117,121 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div style={styles.loginContainer}>
-      <div style={styles.loginForm}>
-        <h2>{isRegistering ? 'Create an Account' : 'Login to GPU Share'}</h2>
+    <main className="auth">
+      <aside className="auth-art">
+        <div className="logo"><span className="mark"><Bolt size={16} /></span>GPU Share</div>
+        <div>
+          <h1>Idle GPUs put to work</h1>
+          <p>
+            Rent a graphics card by the hour, or earn from your own while it sits unused.
+          </p>
+        </div>
+        <IdleChart counts={DECOR} decorative />
+      </aside>
 
-        {error && <div style={styles.errorBox}>{error}</div>}
+      <div className="auth-form">
+        <div className="box">
+          <h2>{isRegistering ? 'Create an account' : 'Log in'}</h2>
 
-        {!isRegistering ? (
-          /* LOGIN FORM */
-          <form onSubmit={handleLoginSubmit}>
-            <div style={styles.inputGroup}>
-              <label>Email</label>
+          {error && <div className="err" role="alert">{error}</div>}
+
+          {!isRegistering ? (
+            /* LOGIN FORM */
+            <form onSubmit={handleLoginSubmit}>
+              <label htmlFor="loginEmail">Email</label>
               <input
+                id="loginEmail"
                 type="email"
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
                 required
                 placeholder="user@domain.com"
-                style={styles.input}
               />
-            </div>
-            <div style={styles.inputGroup}>
-              <label>Password</label>
+              <label htmlFor="loginPassword">Password</label>
               <input
+                id="loginPassword"
                 type="password"
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
                 required
                 placeholder="********"
-                style={styles.input}
               />
-            </div>
-            <button type="submit" style={styles.submitBtn}>
-              Log In
-            </button>
-          </form>
-        ) : (
-          /* REGISTRATION FORM */
-          <form onSubmit={handleRegisterSubmit}>
-            <div style={styles.inputGroup}>
-              <label>First Name</label>
+              <button type="submit" className="btn w">Log in</button>
+            </form>
+          ) : (
+            /* REGISTRATION FORM */
+            <form onSubmit={handleRegisterSubmit}>
+              <div className="row2">
+                <div>
+                  <label htmlFor="firstName">First name</label>
+                  <input
+                    id="firstName"
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                    placeholder="John"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="lastName">Last name</label>
+                  <input
+                    id="lastName"
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                    placeholder="Doe"
+                  />
+                </div>
+              </div>
+              <label htmlFor="regUsername">Username</label>
               <input
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
-                placeholder="John"
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.inputGroup}>
-              <label>Last Name</label>
-              <input
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                required
-                placeholder="Doe"
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.inputGroup}>
-              <label>Username</label>
-              <input
+                id="regUsername"
                 type="text"
                 value={regUsername}
                 onChange={(e) => setRegUsername(e.target.value)}
                 required
                 placeholder="johndoe123"
-                style={styles.input}
               />
-            </div>
-            <div style={styles.inputGroup}>
-              <label>Email</label>
+              <label htmlFor="regEmail">Email</label>
               <input
+                id="regEmail"
                 type="email"
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
                 required
                 placeholder="john@example.com"
-                style={styles.input}
               />
-            </div>
-            <div style={styles.inputGroup}>
-              <label>Password (at least 8 characters)</label>
+              <label htmlFor="regPassword">Password (at least 8 characters)</label>
               <input
+                id="regPassword"
                 type="password"
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
                 required
                 minLength={8}
                 placeholder="********"
-                style={styles.input}
               />
-            </div>
-            <div style={styles.inputGroup}>
-              <label>I want to</label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                style={styles.input}
-              >
+              <label htmlFor="role">I mainly want to</label>
+              <select id="role" value={role} onChange={(e) => setRole(e.target.value)}>
                 <option value="renter">Rent a GPU</option>
                 <option value="owner">Share my GPU</option>
               </select>
-            </div>
-            <button type="submit" style={styles.submitBtn}>
-              Register
-            </button>
-          </form>
-        )}
+              <button type="submit" className="btn w">Create account</button>
+            </form>
+          )}
 
-        {/* TOGGLE FORM BUTTON */}
-        <div style={styles.toggleContainer}>
-          <p>
-            {isRegistering ? 'Already have an account?' : "Don't have an account?"}
-            <button type="button" onClick={toggleMode} style={styles.toggleBtn}>
-              {isRegistering ? ' Log in here' : ' Register here'}
+          <p className="small" style={{ marginTop: 20 }}>
+            {isRegistering ? 'Already have an account? ' : "Don't have an account? "}
+            <button type="button" className="link" onClick={toggleMode}>
+              {isRegistering ? 'Log in' : 'Create one'}
             </button>
           </p>
         </div>
       </div>
-    </div>
+    </main>
   );
-};
-
-const styles: { [key: string]: React.CSSProperties } = {
-  loginContainer: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '100vh',
-    backgroundColor: '#0f172a',
-    color: '#fff',
-    padding: '20px',
-  },
-  loginForm: {
-    backgroundColor: '#1e293b',
-    padding: '2.5rem',
-    borderRadius: '12px',
-    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-    width: '100%',
-    maxWidth: '400px',
-  },
-  errorBox: {
-    backgroundColor: '#ef4444',
-    color: '#fff',
-    padding: '10px',
-    borderRadius: '6px',
-    marginBottom: '1rem',
-    fontSize: '0.9rem',
-    textAlign: 'center',
-  },
-  inputGroup: {
-    marginBottom: '1.2rem',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-  },
-  input: {
-    padding: '10px',
-    borderRadius: '6px',
-    border: '1px solid #475569',
-    backgroundColor: '#0f172a',
-    color: '#fff',
-    fontSize: '1rem',
-  },
-  submitBtn: {
-    width: '100%',
-    padding: '0.8rem',
-    backgroundColor: '#3b82f6',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-    fontSize: '1rem',
-    marginTop: '0.5rem',
-  },
-  toggleContainer: {
-    marginTop: '1.5rem',
-    textAlign: 'center',
-    fontSize: '0.9rem',
-    color: '#94a3b8',
-  },
-  toggleBtn: {
-    background: 'none',
-    border: 'none',
-    color: '#38bdf8',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-    textDecoration: 'underline',
-    padding: 0,
-    fontSize: '0.9rem',
-  },
 };
 
 export default Login;

@@ -1,201 +1,147 @@
 import React, { useState } from 'react';
+import type { GpuItem } from './Dashboard';
+import { api, type BookingDraft, type BookingResult } from '../api';
+import type { UserData } from './Login';
 
 interface PaymentPageProps {
-  totalAmount: number;
+  user: UserData;
+  gpu: GpuItem;
+  draft: BookingDraft;
   onBack: () => void;
-  onSuccess: () => void;
+  onPaid: (booking: BookingResult) => void;
 }
 
-const PaymentPage: React.FC<PaymentPageProps> = ({ totalAmount, onBack, onSuccess }) => {
+const PaymentPage: React.FC<PaymentPageProps> = ({ user, gpu, draft, onBack, onPaid }) => {
   const [cardName, setCardName] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvv, setCvv] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Тук в реално приложение се изпращат данните към Stripe/PayPal
-    onSuccess();
-  };
-
-  // Форматиране на номера на картата (интервал на всеки 4 цифри)
-  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, ''); // Премахва всичко, което не е цифра
-    const formattedValue = value.match(/.{1,4}/g)?.join(' ') || '';
-    setCardNumber(formattedValue);
-  };
-
-  // Форматиране на датата на изтичане (MM/YY)
-  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, ''); // Премахва всичко, което не е цифра
-    if (value.length > 2) {
-      setExpiry(`${value.substring(0, 2)}/${value.substring(2, 4)}`);
-    } else {
-      setExpiry(value);
+    setError('');
+    setBusy(true);
+    try {
+      // The server checks the time slot, calculates the price and runs the (mock) payment.
+      const booking = await api<BookingResult>('/api/bookings', {
+        method: 'POST',
+        body: {
+          user_id: user.id,
+          gpu_id: gpu.id,
+          date: draft.date,
+          start: draft.start,
+          hours: draft.hours,
+          card: { number: cardNumber, exp: expiry, cvc: cvv },
+        },
+      });
+      onPaid(booking);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
     }
   };
 
-  // Форматиране на CVV (само цифри)
-  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Card number: a space after every 4 digits
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '');
-    setCvv(value);
+    setCardNumber(value.match(/.{1,4}/g)?.join(' ') || '');
+  };
+
+  // Expiry: MM/YY
+  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    setExpiry(value.length > 2 ? `${value.substring(0, 2)}/${value.substring(2, 4)}` : value);
+  };
+
+  // CVV: digits only
+  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCvv(e.target.value.replace(/\D/g, ''));
   };
 
   return (
-    <div style={styles.container}>
-      <button onClick={onBack} style={styles.backBtn}>
-        &#8592; Back to Details
-      </button>
+    <main>
+      <div className="narrow">
+        <button className="back" onClick={onBack} disabled={busy}>&#8592; Back to details</button>
 
-      <div style={styles.card}>
-        <h2 style={styles.title}>Secure Checkout</h2>
-        <p style={styles.subtitle}>Total Amount to Pay: <span style={styles.highlight}>€{totalAmount.toFixed(2)}</span></p>
-        
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Cardholder Name</label>
-            <input 
-              type="text" 
-              required 
+        <div className="note">Demo mode: no real payment is made.</div>
+
+        <div className="slip">
+          <h3>Checkout</h3>
+
+          <div className="sum"><span>GPU</span><span>{gpu.type}</span></div>
+          <div className="sum"><span>Date</span><span>{draft.date}</span></div>
+          <div className="sum"><span>Start</span><span>{draft.start}</span></div>
+          <div className="sum"><span>Hours</span><span>{draft.hours}</span></div>
+          <div className="sum total">
+            <span>Total</span>
+            <span>€{draft.total.toFixed(2)}</span>
+          </div>
+
+          {error && <div className="err" role="alert">{error}</div>}
+
+          <form onSubmit={handleSubmit} style={{ marginTop: 18 }}>
+            <label htmlFor="cardName">Cardholder name</label>
+            <input
+              id="cardName"
+              type="text"
+              required
               placeholder="John Doe"
               value={cardName}
               onChange={(e) => setCardName(e.target.value)}
-              style={styles.input}
             />
-          </div>
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Card Number</label>
-            <input 
-              type="text" 
-              required 
-              maxLength={19} // 16 цифри + 3 интервала
+            <label htmlFor="cardNumber">Card number</label>
+            <input
+              id="cardNumber"
+              type="text"
+              inputMode="numeric"
+              required
+              maxLength={19}
               placeholder="0000 0000 0000 0000"
               value={cardNumber}
               onChange={handleCardNumberChange}
-              style={styles.input}
             />
-          </div>
 
-          <div style={styles.row}>
-            <div style={{ ...styles.inputGroup, flex: 1, marginRight: '15px' }}>
-              <label style={styles.label}>Expiration Date</label>
-              <input 
-                type="text" 
-                required 
-                maxLength={5} // 4 цифри + 1 наклонена черта
-                placeholder="MM/YY"
-                value={expiry}
-                onChange={handleExpiryChange}
-                style={styles.input}
-              />
+            <div className="row2">
+              <div>
+                <label htmlFor="expiry">Expiry date</label>
+                <input
+                  id="expiry"
+                  type="text"
+                  inputMode="numeric"
+                  required
+                  maxLength={5}
+                  placeholder="MM/YY"
+                  value={expiry}
+                  onChange={handleExpiryChange}
+                />
+              </div>
+              <div>
+                <label htmlFor="cvv">CVV</label>
+                <input
+                  id="cvv"
+                  type="text"
+                  inputMode="numeric"
+                  required
+                  maxLength={3}
+                  placeholder="123"
+                  value={cvv}
+                  onChange={handleCvvChange}
+                />
+              </div>
             </div>
 
-            <div style={{ ...styles.inputGroup, flex: 1 }}>
-              <label style={styles.label}>CVV</label>
-              <input 
-                type="text" 
-                required 
-                maxLength={3}
-                placeholder="123"
-                value={cvv}
-                onChange={handleCvvChange}
-                style={styles.input}
-              />
-            </div>
-          </div>
-
-          <button type="submit" style={styles.payBtn}>
-            Confirm Payment of €{totalAmount.toFixed(2)}
-          </button>
-        </form>
+            <button type="submit" className="btn w" disabled={busy}>
+              {busy ? 'Processing...' : `Pay €${draft.total.toFixed(2)}`}
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
+    </main>
   );
-};
-
-const styles: { [key: string]: React.CSSProperties } = {
-  container: {
-    backgroundColor: '#0f172a',
-    color: '#fff',
-    minHeight: '100vh',
-    padding: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-  backBtn: {
-    padding: '10px 15px',
-    backgroundColor: '#334155',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    marginBottom: '20px',
-    fontWeight: 'bold',
-    alignSelf: 'flex-start',
-  },
-  card: {
-    backgroundColor: '#1e293b',
-    borderRadius: '12px',
-    padding: '40px',
-    border: '1px solid #334155',
-    width: '100%',
-    maxWidth: '500px',
-    marginTop: '20px',
-  },
-  title: {
-    margin: '0 0 10px 0',
-    fontSize: '1.8rem',
-  },
-  subtitle: {
-    margin: '0 0 30px 0',
-    color: '#94a3b8',
-    fontSize: '1.1rem',
-  },
-  highlight: {
-    color: '#10b981',
-    fontWeight: 'bold',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  inputGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    marginBottom: '20px',
-  },
-  row: {
-    display: 'flex',
-    justifyContent: 'space-between',
-  },
-  label: {
-    marginBottom: '8px',
-    color: '#cbd5e1',
-    fontSize: '0.9rem',
-  },
-  input: {
-    padding: '12px',
-    borderRadius: '6px',
-    border: '1px solid #475569',
-    backgroundColor: '#0f172a',
-    color: '#fff',
-    fontSize: '1rem',
-    outline: 'none',
-  },
-  payBtn: {
-    marginTop: '10px',
-    padding: '15px',
-    backgroundColor: '#10b981',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '1.2rem',
-    fontWeight: 'bold',
-    transition: 'background-color 0.2s',
-  }
 };
 
 export default PaymentPage;

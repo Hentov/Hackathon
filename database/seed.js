@@ -64,6 +64,22 @@ const owners = [
     role: "owner",
     description: "Game developer who shares his workstation when idle.",
   },
+  {
+    name: "Nina Petrova",
+    username: "nina_petrova",
+    email: "nina@example.com",
+    password_hash: demoHash,
+    role: "owner",
+    description: "Video editor who lends her GPU overnight while she sleeps.",
+  },
+  {
+    name: "Tom Becker",
+    username: "tom_becker",
+    email: "tom@example.com",
+    password_hash: demoHash,
+    role: "owner",
+    description: "Data science student sharing his gaming PC between classes.",
+  },
 ];
 
 const ownerIds = {};
@@ -258,6 +274,26 @@ const gpus = [
     to: "23:00",
     photo: "rtx-4060.jpg",
   },
+  {
+    owner: "Nina Petrova",
+    model: "NVIDIA RTX 4080",
+    vram: 16,
+    power: 320,
+    price: 0.6,
+    from: "16:00",
+    to: "23:59",
+    photo: "rtx-4080.jpg",
+  },
+  {
+    owner: "Tom Becker",
+    model: "NVIDIA RTX 3080 Ti",
+    vram: 12,
+    power: 350,
+    price: 0.42,
+    from: "10:00",
+    to: "22:00",
+    photo: "rtx-3080-ti.jpg",
+  },
 ];
 
 const gpuIds = [];
@@ -320,6 +356,15 @@ const booking3 = insertBooking.run(
   "paid"
 );
 
+const booking4 = insertBooking.run(
+  renterIds["Liam Brown"],
+  gpuIds[12],
+  "2026-10-02 17:00",
+  "2026-10-02 20:00",
+  money(0.6 * 3),
+  "completed"
+);
+
 // --------------------------------------------------
 // Reviews
 // --------------------------------------------------
@@ -341,6 +386,12 @@ insertReview.run(
   "Good performance for the price. Easy to use."
 );
 
+insertReview.run(
+  booking4.lastInsertRowid,
+  5,
+  "Smooth setup and great speed for my training run."
+);
+
 // --------------------------------------------------
 // Done
 // --------------------------------------------------
@@ -349,7 +400,7 @@ console.log("Database seeded successfully!");
 console.log(`Inserted ${owners.length} owners.`);
 console.log(`Inserted ${renters.length} renters.`);
 console.log(`Inserted ${gpus.length} GPUs.`);
-console.log("Inserted 3 bookings.");
-console.log("Inserted 2 reviews.");
+console.log("Inserted 4 bookings.");
+console.log("Inserted 3 reviews.");
 
 db.close();

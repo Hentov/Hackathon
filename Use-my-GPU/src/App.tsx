@@ -3,72 +3,73 @@ import Login, { type UserData } from './components/Login';
 import Dashboard, { type GpuItem } from './components/Dashboard';
 import GpuDetails from './components/GpuDetails';
 import PaymentPage from './components/PaymentPage';
-import SuccessPage from './components/SuccessPage'; // Импортираме новата страница за успех
+import SuccessPage from './components/SuccessPage';
+import MyBookings from './components/MyBookings';
+import HostPage from './components/HostPage';
+import ProfilePage from './components/ProfilePage';
+import Nav, { type View } from './components/Nav';
+import type { BookingDraft, BookingResult } from './api';
 
 function App() {
   const [user, setUser] = useState<UserData | null>(null);
+  const [view, setView] = useState<View>('find');
   const [selectedGpu, setSelectedGpu] = useState<GpuItem | null>(null);
-  const [paymentData, setPaymentData] = useState<{ total: number; hours: number } | null>(null);
-  
-  // Ново състояние за показване на екрана за успех
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [draft, setDraft] = useState<BookingDraft | null>(null);
+  const [booking, setBooking] = useState<BookingResult | null>(null);
 
-  const handleLogin = (userData: UserData) => {
-    setUser(userData);
+  // Go to a tab and leave any half-finished booking
+  const navigate = (next: View) => {
+    setView(next);
+    setSelectedGpu(null);
+    setDraft(null);
+    setBooking(null);
   };
 
   const handleLogout = () => {
     setUser(null);
-    setSelectedGpu(null);
-    setPaymentData(null);
-    setIsSuccess(false);
+    navigate('find');
   };
 
-  const handleSelectGpu = (gpu: GpuItem) => {
-    setSelectedGpu(gpu);
+  const renderPage = (u: UserData) => {
+    if (booking) {
+      return (
+        <SuccessPage
+          user={u}
+          booking={booking}
+          onHome={() => navigate('find')}
+          onMyBookings={() => navigate('bookings')}
+        />
+      );
+    }
+    if (view === 'bookings') return <MyBookings user={u} />;
+    if (view === 'host') return <HostPage user={u} />;
+    if (view === 'profile') return <ProfilePage user={u} />;
+    if (selectedGpu && draft) {
+      /* Step 3: card payment */
+      return (
+        <PaymentPage
+          user={u}
+          gpu={selectedGpu}
+          draft={draft}
+          onBack={() => setDraft(null)}
+          onPaid={setBooking}
+        />
+      );
+    }
+    if (selectedGpu) {
+      /* Step 2: GPU details, date and time */
+      return <GpuDetails gpu={selectedGpu} onBack={() => setSelectedGpu(null)} onPay={setDraft} />;
+    }
+    /* Step 1: all listings */
+    return <Dashboard onSelectGpu={setSelectedGpu} onHost={() => navigate('host')} />;
   };
 
   return (
-    <div>
-      {!user ? (
-        <Login onLogin={handleLogin} />
-      ) : isSuccess ? (
-        /* Стъпка 4: Успешно плащане и детайли за свързване */
-        <SuccessPage 
-          onHome={() => {
-            // Връщане към началния екран (Dashboard)
-            setIsSuccess(false);
-            setSelectedGpu(null);
-          }}
-        />
-      ) : paymentData ? (
-        /* Стъпка 3: Страница за плащане с карта */
-        <PaymentPage 
-          totalAmount={paymentData.total}
-          onBack={() => setPaymentData(null)}
-          onSuccess={() => {
-            // При успешно плащане преминаваме към екрана за успех
-            setPaymentData(null);
-            setIsSuccess(true);
-          }}
-        />
-      ) : selectedGpu ? (
-        /* Стъпка 2: Детайли за видеокартата */
-        <GpuDetails 
-          gpu={selectedGpu} 
-          onBack={() => setSelectedGpu(null)} 
-          onPay={(total, hours) => {
-            setPaymentData({ total, hours });
-          }} 
-        />
-      ) : (
-        /* Стъпка 1: Начален екран с всички обяви */
-        <Dashboard 
-          user={user} 
-          onLogout={handleLogout} 
-          onSelectGpu={handleSelectGpu} 
-        />
+    <div className="gs">
+      {user && (
+        <Nav username={user.username} view={view} onNavigate={navigate} onLogout={handleLogout} />
       )}
+      {user ? renderPage(user) : <Login onLogin={setUser} />}
     </div>
   );
 }
