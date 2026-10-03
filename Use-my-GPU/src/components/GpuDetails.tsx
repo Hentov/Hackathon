@@ -10,17 +10,14 @@ interface GpuDetailsProps {
 
 const GpuDetails: React.FC<GpuDetailsProps> = ({ gpu, onBack, onPay }) => {
   const [rentHours, setRentHours] = useState<number>(1);
-  const [isPaid, setIsPaid] = useState(false);
+ 
 
   // Calculate final price
   const totalPrice = gpu.price * rentHours;
   // Energy = power (W) x hours / 1000
   const energyKwh = (gpu.powerW * rentHours) / 1000;
 
-  const handlePayment = () => {
-    setIsPaid(true);
-    onPay(totalPrice, rentHours);
-  };
+  
 
   return (
     <div style={styles.container}>
@@ -91,15 +88,9 @@ const GpuDetails: React.FC<GpuDetailsProps> = ({ gpu, onBack, onPay }) => {
               <span style={styles.totalPrice}>€{totalPrice.toFixed(2)}</span>
             </div>
 
-            {isPaid ? (
-              <div style={styles.successMessage}>
-                ✅ Payment successful! The machine is reserved for {rentHours} h.
-              </div>
-            ) : (
-              <button onClick={handlePayment} style={styles.payBtn}>
-                Pay €{totalPrice.toFixed(2)}
-              </button>
-            )}
+           <button onClick={() => onPay(totalPrice, rentHours)} style={styles.payBtn}>
+              Proceed to Payment
+            </button>
           </div>
         </div>
       </div>

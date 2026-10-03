@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import Login, { type UserData } from './components/Login';
 import Dashboard, { type GpuItem } from './components/Dashboard';
-import GpuDetails from './components/GpuDetails'; // ДОБАВЕНО: Импортираме новата страница
+import GpuDetails from './components/GpuDetails';
+import PaymentPage from './components/PaymentPage'; // Импортираме новата страница за плащане
 
 function App() {
   const [user, setUser] = useState<UserData | null>(null);
-  const [selectedGpu, setSelectedGpu] = useState<GpuItem | null>(null); // ДОБАВЕНО: Състояние за избраната карта
+  const [selectedGpu, setSelectedGpu] = useState<GpuItem | null>(null);
+  
+  // Ново състояние за данните за плащане. Ако не е null, показваме PaymentPage.
+  const [paymentData, setPaymentData] = useState<{ total: number; hours: number } | null>(null);
 
   const handleLogin = (userData: UserData) => {
     setUser(userData);
@@ -13,10 +17,10 @@ function App() {
 
   const handleLogout = () => {
     setUser(null);
-    setSelectedGpu(null); // Изчистваме и избраната карта при изход
+    setSelectedGpu(null);
+    setPaymentData(null);
   };
 
-  // ПРОМЕНЕНО: Вече не показва alert, а променя състоянието на selectedGpu
   const handleSelectGpu = (gpu: GpuItem) => {
     setSelectedGpu(gpu);
   };
@@ -25,18 +29,30 @@ function App() {
     <div>
       {!user ? (
         <Login onLogin={handleLogin} />
+      ) : paymentData ? (
+        /* Стъпка 3: Страница за плащане с карта */
+        <PaymentPage 
+          totalAmount={paymentData.total}
+          onBack={() => setPaymentData(null)} // Връща назад към детайлите за картата
+          onSuccess={() => {
+            alert(`Payment of €${paymentData.total.toFixed(2)} successful! Machine booked for ${paymentData.hours} hours.`);
+            // След успешно плащане се връщаме в самото начало (Dashboard)
+            setPaymentData(null);
+            setSelectedGpu(null);
+          }}
+        />
       ) : selectedGpu ? (
-        /* ДОБАВЕНО: Ако потребителят е логнат И е избрал карта, показваме GpuDetails */
+        /* Стъпка 2: Детайли за видеокартата */
         <GpuDetails 
           gpu={selectedGpu} 
           onBack={() => setSelectedGpu(null)} 
           onPay={(total, hours) => {
-            alert(`Успешно платихте €${total.toFixed(2)} за ${hours} часа!`);
-            // setSelectedGpu(null); // Разкоментирай това, ако искаш след плащане да го връща в Dashboard-a
+            // Вместо alert, тук запазваме сумата и часовете, което автоматично отваря PaymentPage
+            setPaymentData({ total, hours });
           }} 
         />
       ) : (
-        /* Твоят оригинален Dashboard се показва, ако потребителят е логнат, но НЕ е избрал карта */
+        /* Стъпка 1: Начален екран с всички обяви */
         <Dashboard 
           user={user} 
           onLogout={handleLogout} 
