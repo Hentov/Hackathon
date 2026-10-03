@@ -1,158 +1,96 @@
 import React, { useState } from 'react';
-import { GpuItem } from './Dashboard';
-
-export interface GpuDetailsItem extends GpuItem {
-  ram: string;
-  availableFrom: string;
-  availableTo: string;
-  provider: {
-    name: string;
-    rating: number; // e.g. 4.9 / 5
-    reviewCount: number;
-    energySavedKwh: number;
-  };
-  description?: string;
-}
+import { onImgError, type GpuItem } from './Dashboard';
 
 interface GpuDetailsProps {
   gpu: GpuItem;
   onBack: () => void;
-  onBook: (bookingInfo: any) => void;
+  // The payment function can accept transaction details
+  onPay: (totalPrice: number, hours: number) => void; 
 }
 
-const GpuDetails: React.FC<GpuDetailsProps> = ({ gpu, onBack, onBook }) => {
-  // Разширяваме данните с примерни характеристики, ако липсват
-  const detailedGpu: GpuDetailsItem = {
-    ...gpu,
-    ram: gpu.type.includes('A100') ? '80 GB HBM2e' : gpu.type.includes('4090') ? '24 GB GDDR6X' : '16 GB GDDR6X',
-    availableFrom: '08:00',
-    availableTo: '22:00',
-    provider: {
-      name: 'Alex Developer',
-      rating: 4.9,
-      reviewCount: 38,
-      energySavedKwh: 142.5,
-    },
-    description: 'Оптимизирана машина за Machine Learning, AI training и тежки 3D луупове/рендеринг. Стабилна връзка и ниско закъснение.',
-  };
+const GpuDetails: React.FC<GpuDetailsProps> = ({ gpu, onBack, onPay }) => {
+  const [rentHours, setRentHours] = useState<number>(1);
+ 
 
-  const [date, setDate] = useState('');
-  const [startTime, setStartTime] = useState('09:00');
-  const [hours, setHours] = useState<number>(1);
-  const [isSuccess, setIsSuccess] = useState(false);
+  // Calculate final price
+  const totalPrice = gpu.price * rentHours;
+  // Energy = power (W) x hours / 1000
+  const energyKwh = (gpu.powerW * rentHours) / 1000;
 
-  const totalPrice = (detailedGpu.price * hours).toFixed(2);
-
-  const handleBookingSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!date) {
-      alert('Моля, изберете дата за наемане!');
-      return;
-    }
-
-    const bookingData = {
-      gpuId: detailedGpu.id,
-      gpuType: detailedGpu.type,
-      date,
-      startTime,
-      hours,
-      totalPrice,
-    };
-
-    setIsSuccess(true);
-    onBook(bookingData);
-  };
+  
 
   return (
     <div style={styles.container}>
       <button onClick={onBack} style={styles.backBtn}>
-        ← Обратно към всички обяви
+        &#8592; Back to all GPUs
       </button>
 
       <div style={styles.card}>
         <div style={styles.grid}>
-          {/* Лява колона: Изображение и Информация за GPU */}
+          {/* Left column: Image and Specs */}
           <div>
-            <img src={detailedGpu.image} alt={detailedGpu.type} style={styles.image} />
-            <h2 style={styles.title}>{detailedGpu.type}</h2>
+            <img src={gpu.image} alt={gpu.type} onError={onImgError} style={styles.image} />
+            <h2 style={styles.title}>{gpu.type}</h2>
             
-            <div style={styles.specBox}>
-              <p><strong>VRAM Памет:</strong> {detailedGpu.ram}</p>
-              <p><strong>Работно време на машината:</strong> От {detailedGpu.availableFrom} до {detailedGpu.availableTo} ч.</p>
-              <p><strong>Цена:</strong> <span style={styles.priceHighlight}>€{detailedGpu.price.toFixed(2)} / час</span></p>
+            <div style={styles.infoBox}>
+              <h4 style={styles.infoTitle}>Technical Specifications:</h4>
+              <p style={styles.infoText}>{gpu.vramGb} GB VRAM · {gpu.powerW} W</p>
             </div>
 
-            {/* Профил и рейтинг на притежателя */}
-            <div style={styles.providerBox}>
-              <h3>Притежател на видеокартата</h3>
-              <p><strong>Име:</strong> {detailedGpu.provider.name}</p>
-              <p>
-                <strong>Feedback:</strong> ⭐ {detailedGpu.provider.rating} / 5.0 
-                ({detailedGpu.provider.reviewCount} положителни отзива)
+            <div style={styles.infoBox}>
+              <h4 style={styles.infoTitle}>Owner:</h4>
+              <p style={styles.infoText}>
+                {gpu.ownerUsername} · {gpu.ownerRating ? `★ ${gpu.ownerRating} / 5` : 'No ratings yet'}
               </p>
-              <p style={styles.greenText}>
-                🌱 <strong>Спестена излишна енергия:</strong> ~{detailedGpu.provider.energySavedKwh} kWh
+            </div>
+
+            <div style={styles.infoBox}>
+              <h4 style={styles.infoTitle}>Availability & Schedule:</h4>
+              <p style={styles.infoText}>
+                🟢 <strong>Available for rent:</strong> Every day from {gpu.availableFrom} to {gpu.availableTo} h.
               </p>
-              <p style={styles.desc}>{detailedGpu.description}</p>
+              <p style={styles.infoText}>
+                Maximum rental time: <strong>{gpu.availableHours} hours</strong>
+              </p>
             </div>
           </div>
 
-          {/* Дясна колона: Форма за избор на период и плащане */}
-          <div style={styles.bookingBox}>
-            <h3>Наемане на виртуална машина</h3>
+          {/* Right column: Pricing and Payment */}
+          <div style={styles.checkoutSection}>
+            <h3 style={styles.checkoutTitle}>Rental Details</h3>
             
-            {isSuccess ? (
-              <div style={styles.successMessage}>
-                🎉 Успешно резервирахте {detailedGpu.type}!
-                <br />
-                <small>Период: {date} от {startTime} за {hours} ч.</small>
-              </div>
-            ) : (
-              <form onSubmit={handleBookingSubmit}>
-                <div style={styles.inputGroup}>
-                  <label>Изберете дата:</label>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    required
-                    style={styles.input}
-                  />
-                </div>
+            <div style={styles.priceRow}>
+              <span>Price per hour:</span>
+              <span style={styles.highlightPrice}>€{gpu.price.toFixed(2)}</span>
+            </div>
 
-                <div style={styles.inputGroup}>
-                  <label>Начален час:</label>
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    required
-                    style={styles.input}
-                  />
-                </div>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>How many hours will you rent the machine?</label>
+              <input 
+                type="number" 
+                min="1" 
+                max={gpu.availableHours} 
+                value={rentHours} 
+                onChange={(e) =>
+                  setRentHours(Math.min(gpu.availableHours, Math.max(1, Number(e.target.value) || 1)))
+                }
+                style={styles.input}
+              />
+            </div>
 
-                <div style={styles.inputGroup}>
-                  <label>Продължителност (часове):</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max={detailedGpu.availableHours}
-                    value={hours}
-                    onChange={(e) => setHours(Math.max(1, parseInt(e.target.value) || 1))}
-                    style={styles.input}
-                  />
-                </div>
+            <div style={styles.priceRow}>
+              <span>Energy consumed:</span>
+              <span>{energyKwh.toFixed(2)} kWh</span>
+            </div>
 
-                <div style={styles.totalBox}>
-                  <span>Обща сума за плащане:</span>
-                  <div style={styles.totalPrice}>€{totalPrice}</div>
-                </div>
+            <div style={styles.totalRow}>
+              <span>Total amount:</span>
+              <span style={styles.totalPrice}>€{totalPrice.toFixed(2)}</span>
+            </div>
 
-                <button type="submit" style={styles.confirmBtn}>
-                  Потвърди и наеми GPU
-                </button>
-              </form>
-            )}
+           <button onClick={() => onPay(totalPrice, rentHours)} style={styles.payBtn}>
+              Proceed to Payment
+            </button>
           </div>
         </div>
       </div>
@@ -168,18 +106,19 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: '20px',
   },
   backBtn: {
-    padding: '8px 16px',
+    padding: '10px 15px',
     backgroundColor: '#334155',
     color: '#fff',
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
     marginBottom: '20px',
+    fontWeight: 'bold',
   },
   card: {
     backgroundColor: '#1e293b',
     borderRadius: '12px',
-    padding: '25px',
+    padding: '30px',
     border: '1px solid #334155',
     maxWidth: '900px',
     margin: '0 auto',
@@ -187,97 +126,110 @@ const styles: { [key: string]: React.CSSProperties } = {
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '30px',
+    gap: '40px',
   },
   image: {
     width: '100%',
-    borderRadius: '8px',
-    height: '200px',
+    height: '250px',
     objectFit: 'cover',
+    borderRadius: '8px',
+    border: '1px solid #334155',
   },
   title: {
-    margin: '15px 0 10px 0',
+    fontSize: '2rem',
     color: '#38bdf8',
+    margin: '20px 0 10px 0',
   },
-  specBox: {
+  infoBox: {
     backgroundColor: '#0f172a',
     padding: '15px',
     borderRadius: '8px',
-    marginBottom: '20px',
-    lineHeight: '1.6',
+    marginTop: '15px',
   },
-  priceHighlight: {
-    color: '#10b981',
+  infoTitle: {
+    margin: '0 0 10px 0',
+    color: '#94a3b8',
+    fontSize: '1rem',
+  },
+  infoText: {
+    margin: '5px 0',
+    fontSize: '0.95rem',
+  },
+  checkoutSection: {
+    backgroundColor: '#0f172a',
+    padding: '25px',
+    borderRadius: '12px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+  },
+  checkoutTitle: {
+    marginTop: 0,
+    marginBottom: '20px',
+    borderBottom: '1px solid #334155',
+    paddingBottom: '10px',
+  },
+  priceRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: '1.2rem',
+    marginBottom: '20px',
+  },
+  highlightPrice: {
+    color: '#38bdf8',
     fontWeight: 'bold',
   },
-  providerBox: {
-    backgroundColor: '#0f172a',
-    padding: '15px',
-    borderRadius: '8px',
-    lineHeight: '1.6',
-  },
-  greenText: {
-    color: '#34d399',
-  },
-  desc: {
-    fontSize: '0.9rem',
-    color: '#94a3b8',
-    marginTop: '10px',
-  },
-  bookingBox: {
-    backgroundColor: '#0f172a',
-    padding: '20px',
-    borderRadius: '8px',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-  },
   inputGroup: {
-    marginBottom: '15px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '5px',
+    marginBottom: '25px',
+  },
+  label: {
+    marginBottom: '10px',
+    color: '#94a3b8',
   },
   input: {
-    padding: '10px',
+    padding: '12px',
     borderRadius: '6px',
     border: '1px solid #475569',
     backgroundColor: '#1e293b',
     color: '#fff',
+    fontSize: '1.1rem',
+    outline: 'none',
   },
-  totalBox: {
-    marginTop: '20px',
-    padding: '15px',
-    backgroundColor: '#1e293b',
-    borderRadius: '6px',
-    textAlign: 'center',
+  totalRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    marginBottom: '30px',
+    paddingTop: '15px',
+    borderTop: '1px solid #334155',
   },
   totalPrice: {
-    fontSize: '1.8rem',
-    fontWeight: 'bold',
-    color: '#38bdf8',
-    marginTop: '5px',
+    color: '#10b981',
   },
-  confirmBtn: {
+  payBtn: {
     width: '100%',
-    padding: '12px',
+    padding: '15px',
     backgroundColor: '#10b981',
     color: '#fff',
     border: 'none',
-    borderRadius: '6px',
+    borderRadius: '8px',
     cursor: 'pointer',
+    fontSize: '1.2rem',
     fontWeight: 'bold',
-    fontSize: '1.1rem',
-    marginTop: '15px',
+    transition: 'background-color 0.2s',
   },
   successMessage: {
     backgroundColor: '#065f46',
     color: '#a7f3d0',
-    padding: '20px',
+    padding: '15px',
     borderRadius: '8px',
     textAlign: 'center',
     fontWeight: 'bold',
-  },
+    fontSize: '1.1rem',
+  }
 };
 
 export default GpuDetails;

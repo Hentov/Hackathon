@@ -48,4 +48,41 @@ app.post("/api/login", (req, res) => {
   res.json({ id: user.id, name: user.name, username: user.username, email: user.email, role: user.role });
 });
 
+app.get("/api/stats", (req, res) => {
+  const rows = db.prepare("SELECT available_from, available_to FROM gpus").all();
+  const toHours = (t) => {
+    const [h, m] = t.split(":").map(Number);
+    return h + m / 60;
+  };
+  let total = 0;
+  for (const r of rows) total += toHours(r.available_to) - toHours(r.available_from);
+  res.json({ availableGpus: rows.length, totalHours: Math.round(total) });
+});
+
+app.get("/api/gpu-models", (req, res) => {
+  const rows = db.prepare("SELECT DISTINCT model FROM gpus ORDER BY model").all();
+  res.json(rows.map((r) => r.model));
+});
+
+app.get("/api/gpus", (req, res) => {
+  const model = (req.query.model || "").trim();
+  const rows = db
+    .prepare(
+      `SELECT g.id, g.model, g.vram_gb, g.power_w, g.price_per_hour,
+              g.available_from, g.available_to, g.photo,
+              u.username AS owner_username,
+              (SELECT ROUND(AVG(r.stars), 1)
+                 FROM reviews r
+                 JOIN bookings b ON b.id = r.booking_id
+                 JOIN gpus g2 ON g2.id = b.gpu_id
+                WHERE g2.owner_id = g.owner_id) AS owner_rating
+         FROM gpus g
+         JOIN users u ON u.id = g.owner_id
+        WHERE (? = '' OR g.model = ?)
+        ORDER BY g.price_per_hour`
+    )
+    .all(model, model);
+  res.json(rows);
+});
+
 app.listen(3000, () => console.log("Running on http://localhost:3000"));

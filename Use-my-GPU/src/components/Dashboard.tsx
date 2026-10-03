@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+
+const API_URL = 'http://localhost:3000';
 
 export interface GpuItem {
   id: number;
@@ -6,18 +8,59 @@ export interface GpuItem {
   price: number;
   image: string;
   availableHours: number;
+  vramGb: number;
+  powerW: number;
+  availableFrom: string;
+  availableTo: string;
+  ownerUsername: string;
+  ownerRating: number | null;
 }
 
-const MOCK_GPUS: GpuItem[] = [
-  { id: 1, type: 'RTX 4070', price: 1.50, image: 'https://via.placeholder.com/250x150?text=RTX+4070', availableHours: 8 },
-  { id: 2, type: 'RTX 4070', price: 1.60, image: 'https://via.placeholder.com/250x150?text=RTX+4070', availableHours: 5 },
-  { id: 3, type: 'RTX 4080', price: 2.20, image: 'https://via.placeholder.com/250x150?text=RTX+4080', availableHours: 12 },
-  { id: 4, type: 'RTX 4090', price: 3.50, image: 'https://via.placeholder.com/250x150?text=RTX+4090', availableHours: 10 },
-  { id: 5, type: 'NVIDIA A100', price: 5.00, image: 'https://via.placeholder.com/250x150?text=NVIDIA+A100', availableHours: 24 },
-];
+interface ApiGpu {
+  id: number;
+  model: string;
+  vram_gb: number;
+  power_w: number;
+  price_per_hour: number;
+  available_from: string;
+  available_to: string;
+  photo: string;
+  owner_username: string;
+  owner_rating: number | null;
+}
+
+const toHours = (t: string) => {
+  const [h, m] = t.split(':').map(Number);
+  return h + m / 60;
+};
+
+const PLACEHOLDER =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' width='250' height='150'><rect width='100%' height='100%' fill='#334155'/><text x='50%' y='50%' fill='#94a3b8' font-family='sans-serif' font-size='16' text-anchor='middle'>GPU</text></svg>"
+  );
+
+const mapGpu = (g: ApiGpu): GpuItem => ({
+  id: g.id,
+  type: g.model,
+  price: g.price_per_hour,
+  image: `/images/${g.photo}`,
+  availableHours: Math.max(1, Math.round(toHours(g.available_to) - toHours(g.available_from))),
+  vramGb: g.vram_gb,
+  powerW: g.power_w,
+  availableFrom: g.available_from,
+  availableTo: g.available_to,
+  ownerUsername: g.owner_username,
+  ownerRating: g.owner_rating,
+});
+
+export const onImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  e.currentTarget.onerror = null;
+  e.currentTarget.src = PLACEHOLDER;
+};
 
 interface DashboardProps {
-  user: { email: string };
+  user: { username: string }; // ПРОМЯНА: сменихме email на username
   onLogout: () => void;
   onSelectGpu: (gpu: GpuItem) => void;
 }
@@ -25,9 +68,29 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onSelectGpu }) => {
   const [selectedType, setSelectedType] = useState('All');
 
-  const filteredGpus = selectedType === 'All' 
-    ? MOCK_GPUS 
-    : MOCK_GPUS.filter(gpu => gpu.type === selectedType);
+  const [models, setModels] = useState<string[]>([]);
+  const [gpus, setGpus] = useState<GpuItem[]>([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/gpu-models`)
+      .then((r) => r.json())
+      .then(setModels)
+      .catch(() => setError('Cannot reach the server'));
+  }, []);
+
+  useEffect(() => {
+    const query = selectedType === 'All' ? '' : `?model=${encodeURIComponent(selectedType)}`;
+    fetch(`${API_URL}/api/gpus${query}`)
+      .then((r) => r.json())
+      .then((rows: ApiGpu[]) => {
+        setGpus(rows.map(mapGpu));
+        setError('');
+      })
+      .catch(() => setError('Cannot reach the server'));
+  }, [selectedType]);
+
+  const filteredGpus = gpus;
 
   const totalAvailableGpus = filteredGpus.length;
   const totalHours = filteredGpus.reduce((acc, gpu) => acc + gpu.availableHours, 0);
@@ -37,7 +100,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onSelectGpu }) =>
       <header style={styles.header}>
         <h1>GPU SHARE</h1>
         <div>
-          <span style={{ marginRight: '15px' }}>Hello, {user.email}</span>
+          {/* ПРОМЯНА: тук вече се извиква user.username */}
+          <span style={{ marginRight: '15px' }}>Hello, {user.username}</span>
           <button onClick={onLogout} style={styles.logoutBtn}>Logout</button>
         </div>
       </header>
@@ -61,19 +125,23 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onSelectGpu }) =>
           style={styles.select}
         >
           <option value="All">All models</option>
-          <option value="RTX 4070">RTX 4070</option>
-          <option value="RTX 4080">RTX 4080</option>
-          <option value="RTX 4090">RTX 4090</option>
-          <option value="NVIDIA A100">NVIDIA A100</option>
+          {models.map((m) => (
+            <option key={m} value={m}>{m}</option>
+          ))}
         </select>
       </div>
+
+      {error && <p style={{ color: '#f87171' }}>{error}</p>}
 
       <main style={styles.gpuGrid}>
         {filteredGpus.map((gpu) => (
           <div key={gpu.id} style={styles.gpuCard}>
-            <img src={gpu.image} alt={gpu.type} style={styles.cardImg} />
+            <img src={gpu.image} alt={gpu.type} onError={onImgError} style={styles.cardImg} />
             <div style={styles.cardBody}>
               <h3>{gpu.type}</h3>
+              <p style={{ color: '#94a3b8', margin: '5px 0' }}>
+                {gpu.ownerUsername} · {gpu.ownerRating ? `★ ${gpu.ownerRating}` : 'No ratings yet'}
+              </p>
               <p style={styles.price}>Price: €{gpu.price.toFixed(2)} / hour</p>
               <button 
                 onClick={() => onSelectGpu(gpu)} 
