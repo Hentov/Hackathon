@@ -4,7 +4,7 @@ export interface UserData {
   id: number;
   name: string;
   email: string;
-  username?: string;
+  username: string;
   role: string;
 }
 
@@ -16,7 +16,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [isRegistering, setIsRegistering] = useState(false);
 
   // Login form states
-  const [loginUsername, setLoginUsername] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
   // Registration form states
@@ -25,6 +25,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [regUsername, setRegUsername] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [role, setRole] = useState('renter');
 
   const [error, setError] = useState('');
 
@@ -33,7 +34,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     e.preventDefault();
     setError('');
 
-    if (!loginUsername || !loginPassword) {
+    if (!loginEmail || !loginPassword) {
       setError('Please fill in all fields.');
       return;
     }
@@ -44,7 +45,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       });
 
       const data = await response.json();
@@ -86,7 +87,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           username: regUsername,
           email: regEmail,
           password: regPassword,
-          role: 'user' // Твърдо зададена роля по подразбиране
+          role,
         }),
       });
 
@@ -120,13 +121,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           /* LOGIN FORM */
           <form onSubmit={handleLoginSubmit}>
             <div style={styles.inputGroup}>
-              <label>Username</label>
+              <label>Email</label>
               <input
-                type="text"
-                value={loginUsername}
-                onChange={(e) => setLoginUsername(e.target.value)}
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
                 required
-                placeholder="johndoe123"
+                placeholder="user@domain.com"
                 style={styles.input}
               />
             </div>
@@ -203,6 +204,17 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 placeholder="********"
                 style={styles.input}
               />
+            </div>
+            <div style={styles.inputGroup}>
+              <label>I want to</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                style={styles.input}
+              >
+                <option value="renter">Rent a GPU</option>
+                <option value="owner">Share my GPU</option>
+              </select>
             </div>
             <button type="submit" style={styles.submitBtn}>
               Register

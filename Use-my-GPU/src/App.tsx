@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Login, { type UserData } from './components/Login';
 import Dashboard, { type GpuItem } from './components/Dashboard';
 
