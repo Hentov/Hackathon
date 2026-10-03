@@ -17,7 +17,11 @@ CREATE TABLE IF NOT EXISTS gpus (
   price_per_hour REAL NOT NULL,
   available_from TEXT NOT NULL,
   available_to TEXT NOT NULL,
-  photo TEXT
+  photo TEXT,
+  conn_jupyter_url TEXT,
+  conn_jupyter_token TEXT,
+  conn_ssh_command TEXT,
+  conn_ssh_password TEXT
 );
 
 CREATE TABLE IF NOT EXISTS bookings (

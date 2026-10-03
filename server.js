@@ -4,6 +4,12 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const db = require("./database/db");
 
+// Optional real connection details a host can save with a listing (added without resetting the database)
+for (const col of ["conn_jupyter_url", "conn_jupyter_token", "conn_ssh_command", "conn_ssh_password"]) {
+  const has = db.prepare("PRAGMA table_info(gpus)").all().some((c) => c.name === col);
+  if (!has) db.exec(`ALTER TABLE gpus ADD COLUMN ${col} TEXT`);
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -312,7 +318,11 @@ app.get("/api/bookings/:id/connection", (req, res) => {
   if (b.end_time <= now) {
     return res.status(410).json({ error: "This rental has ended, the connection details are no longer available" });
   }
-  res.json({
+  const real = db
+    .prepare("SELECT conn_jupyter_url, conn_jupyter_token, conn_ssh_command, conn_ssh_password FROM gpus WHERE id = ?")
+    .get(b.gpu_id);
+  const hasReal = real && (real.conn_jupyter_url || real.conn_ssh_command);
+  const out = {
     booking_id: b.id,
     phase: b.start_time <= now ? "active" : "upcoming",
     start_time: b.start_time,
@@ -325,7 +335,16 @@ app.get("/api/bookings/:id/connection", (req, res) => {
     jupyter_url: `http://${CONNECT_HOST}:${8800 + b.gpu_id}`,
     jupyter_token: token("jt", b.id),
     demo: true,
-  });
+  };
+  if (hasReal) {
+    // The host saved real details: show those instead of the demo values
+    out.ssh_command = real.conn_ssh_command || "";
+    out.password = real.conn_ssh_password || "";
+    out.jupyter_url = real.conn_jupyter_url || "";
+    out.jupyter_token = real.conn_jupyter_token || "";
+    out.demo = false;
+  }
+  res.json(out);
 });
 
 // ---------- Create a listing (any user) ----------
@@ -347,13 +366,42 @@ app.post("/api/gpus", (req, res) => {
   if (toMinutes(available_from) >= toMinutes(available_to)) {
     return res.status(400).json({ error: "'Available from' must be earlier than 'Available to'" });
   }
+  const clean = (v) => (v == null ? "" : String(v).trim());
+  const jUrl = clean(req.body.conn_jupyter_url);
+  const jTok = clean(req.body.conn_jupyter_token);
+  const sshCmd = clean(req.body.conn_ssh_command);
+  const sshPw = clean(req.body.conn_ssh_password);
+  if ([jUrl, jTok, sshCmd, sshPw].some((v) => v.length > 300)) {
+    return res.status(400).json({ error: "Connection details are too long" });
+  }
+  if (jUrl && !/^https?:\/\//i.test(jUrl)) {
+    return res.status(400).json({ error: "The Jupyter address must start with http:// or https://" });
+  }
   const info = db
     .prepare(
-      `INSERT INTO gpus (owner_id, model, vram_gb, power_w, price_per_hour, available_from, available_to, photo)
-       VALUES (?, ?, ?, ?, ?, ?, ?, NULL)`
+      `INSERT INTO gpus (owner_id, model, vram_gb, power_w, price_per_hour, available_from, available_to, photo,
+                         conn_jupyter_url, conn_jupyter_token, conn_ssh_command, conn_ssh_password)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)`
     )
-    .run(owner.id, name, vram, power, money(price), available_from, available_to);
+    .run(owner.id, name, vram, power, money(price), available_from, available_to,
+         jUrl || null, jTok || null, sshCmd || null, sshPw || null);
   res.json({ id: info.lastInsertRowid, model: name });
+});
+
+// ---------- Change the remote access details of my own listing ----------
+app.put("/api/gpus/:id/connection", (req, res) => {
+  const g = db.prepare("SELECT id, owner_id FROM gpus WHERE id = ?").get(req.params.id);
+  if (!g || g.owner_id !== Number(req.body.owner_id)) {
+    return res.status(404).json({ error: "Listing not found" });
+  }
+  const clean = (v) => (v == null ? "" : String(v).trim());
+  const access = clean(req.body.conn_ssh_command);
+  const pw = clean(req.body.conn_ssh_password);
+  if (access.length > 300 || pw.length > 300) {
+    return res.status(400).json({ error: "Connection details are too long" });
+  }
+  db.prepare("UPDATE gpus SET conn_ssh_command = ?, conn_ssh_password = ? WHERE id = ?").run(access || null, pw || null, g.id);
+  res.json({ ok: true });
 });
 
 // ---------- My listings (owners) ----------
@@ -364,6 +412,8 @@ app.get("/api/my-gpus", (req, res) => {
   const rows = db
     .prepare(
       `SELECT g.id, g.model, g.vram_gb, g.power_w, g.price_per_hour, g.available_from, g.available_to,
+              (COALESCE(g.conn_jupyter_url, '') != '' OR COALESCE(g.conn_ssh_command, '') != '') AS has_connection,
+              g.conn_ssh_command, g.conn_ssh_password,
               (SELECT COUNT(*) FROM bookings b
                 WHERE b.gpu_id = g.id AND b.status != 'cancelled' AND b.end_time > ?) AS upcoming_bookings
          FROM gpus g WHERE g.owner_id = ? ORDER BY g.id DESC`

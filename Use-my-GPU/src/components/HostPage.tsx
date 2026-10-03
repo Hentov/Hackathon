@@ -16,6 +16,9 @@ interface MyGpu {
   available_from: string;
   available_to: string;
   upcoming_bookings: number;
+  has_connection: number;
+  conn_ssh_command: string | null;
+  conn_ssh_password: string | null;
 }
 
 // Common cards: picking one fills in the memory and power
@@ -32,6 +35,39 @@ const PRESETS: Record<string, { vram: number; power: number }> = {
   'NVIDIA A100': { vram: 80, power: 400 },
 };
 
+// Lets the host add or change the remote access details of an existing listing
+const AccessEditor: React.FC<{ gpu: MyGpu; userId: number; onSaved: () => void }> = ({ gpu, userId, onSaved }) => {
+  const [id, setId] = useState(gpu.conn_ssh_command ?? '');
+  const [pw, setPw] = useState(gpu.conn_ssh_password ?? '');
+  const [msg, setMsg] = useState('');
+
+  const save = async () => {
+    setMsg('');
+    try {
+      await api(`/api/gpus/${gpu.id}/connection`, {
+        method: 'PUT',
+        body: { owner_id: userId, conn_ssh_command: id, conn_ssh_password: pw },
+      });
+      setMsg('Saved');
+      onSaved();
+    } catch (e) {
+      setMsg((e as Error).message);
+    }
+  };
+
+  return (
+    <details style={{ marginTop: 12 }} open={!gpu.conn_ssh_command}>
+      <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Remote access</summary>
+      <label htmlFor={`rid${gpu.id}`}>Remote access ID</label>
+      <input id={`rid${gpu.id}`} maxLength={300} placeholder="AnyDesk ID: 123 456 789" value={id} onChange={(e) => setId(e.target.value)} />
+      <label htmlFor={`rpw${gpu.id}`}>Remote access password</label>
+      <input id={`rpw${gpu.id}`} type="password" autoComplete="new-password" maxLength={300} value={pw} onChange={(e) => setPw(e.target.value)} />
+      <button type="button" className="btn ghost sm" onClick={save}>Save remote access</button>
+      {msg && <span className="small" style={{ marginLeft: 12 }}>{msg}</span>}
+    </details>
+  );
+};
+
 const HostPage: React.FC<Props> = ({ user }) => {
   const [model, setModel] = useState('');
   const [vram, setVram] = useState('');
@@ -39,6 +75,8 @@ const HostPage: React.FC<Props> = ({ user }) => {
   const [price, setPrice] = useState('');
   const [from, setFrom] = useState('18:00');
   const [to, setTo] = useState('23:59');
+  const [sshCmd, setSshCmd] = useState('');
+  const [sshPw, setSshPw] = useState('');
   const [error, setError] = useState('');
   const [done, setDone] = useState('');
   const [busy, setBusy] = useState(false);
@@ -79,6 +117,8 @@ const HostPage: React.FC<Props> = ({ user }) => {
           price_per_hour: Number(price),
           available_from: from,
           available_to: to,
+          conn_ssh_command: sshCmd,
+          conn_ssh_password: sshPw,
         },
       });
       setDone(`"${model}" is now listed and visible to renters.`);
@@ -86,6 +126,8 @@ const HostPage: React.FC<Props> = ({ user }) => {
       setVram('');
       setPower('');
       setPrice('');
+      setSshCmd('');
+      setSshPw('');
       loadMine();
     } catch (err) {
       setError((err as Error).message);
@@ -149,6 +191,16 @@ const HostPage: React.FC<Props> = ({ user }) => {
             </p>
             {from && to && <Strip from={from} to={to} labels />}
 
+            <h3 style={{ marginTop: 26 }}>Remote access (optional)</h3>
+            <p className="small" style={{ marginBottom: 6 }}>
+              Install AnyDesk or Chrome Remote Desktop on your PC and enter the ID it shows. Renters see
+              it only during their booking. Leave it empty to show demo values.
+            </p>
+            <label htmlFor="ssh">Remote access ID</label>
+            <input id="ssh" maxLength={300} placeholder="AnyDesk ID: 123 456 789" value={sshCmd} onChange={(e) => setSshCmd(e.target.value)} />
+            <label htmlFor="sshpw">Remote access password</label>
+            <input id="sshpw" type="password" autoComplete="new-password" maxLength={300} value={sshPw} onChange={(e) => setSshPw(e.target.value)} />
+
             <button type="submit" className="btn w" style={{ marginTop: 22 }} disabled={busy}>
               {busy ? 'Saving...' : 'Create listing'}
             </button>
@@ -166,9 +218,11 @@ const HostPage: React.FC<Props> = ({ user }) => {
               </div>
               <p className="small" style={{ margin: '6px 0 8px' }}>
                 {g.vram_gb} GB memory, {g.power_w} W, free {g.available_from} to {g.available_to}.{' '}
-                {g.upcoming_bookings} upcoming {g.upcoming_bookings === 1 ? 'booking' : 'bookings'}.
+                {g.upcoming_bookings} upcoming {g.upcoming_bookings === 1 ? 'booking' : 'bookings'}.{' '}
+                {g.has_connection ? 'Real connection saved.' : 'Demo connection.'}
               </p>
               <Strip from={g.available_from} to={g.available_to} />
+              <AccessEditor key={`${g.id}-${g.conn_ssh_command}-${g.conn_ssh_password}`} gpu={g} userId={user.id} onSaved={loadMine} />
             </div>
           ))}
         </div>

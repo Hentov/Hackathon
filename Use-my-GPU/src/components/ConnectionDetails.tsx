@@ -8,6 +8,7 @@ interface Props {
 
 const Field: React.FC<{ label: string; value: string }> = ({ label, value }) => {
   const [copied, setCopied] = useState(false);
+  if (!value) return null;
 
   const copy = async () => {
     try {
@@ -52,10 +53,22 @@ const ConnectionDetails: React.FC<Props> = ({ bookingId, userId }) => {
           ? `Connected rental, active until ${conn.end_time}.`
           : `Starts ${conn.start_time} and ends ${conn.end_time}. The details are ready now.`}
       </p>
-      <Field label="SSH command" value={conn.ssh_command} />
-      <Field label="Password" value={conn.password} />
-      <Field label="Jupyter Notebook address" value={conn.jupyter_url} />
-      <Field label="Jupyter token" value={conn.jupyter_token} />
+      {conn.demo ? (
+        <>
+          <Field label="SSH command" value={conn.ssh_command} />
+          <Field label="Password" value={conn.password} />
+          <Field label="Jupyter Notebook address" value={conn.jupyter_url} />
+          <Field label="Jupyter token" value={conn.jupyter_token} />
+        </>
+      ) : (
+        <>
+          <p className="state">Open AnyDesk (or Chrome Remote Desktop) on your computer and connect with this ID.</p>
+          <Field label="Remote access ID" value={conn.ssh_command} />
+          <Field label="Password" value={conn.password} />
+          <Field label="Jupyter Notebook address" value={conn.jupyter_url} />
+          <Field label="Jupyter token" value={conn.jupyter_token} />
+        </>
+      )}
     </div>
   );
 };
