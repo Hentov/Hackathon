@@ -4,7 +4,7 @@ import { onImgError, type GpuItem } from './Dashboard';
 interface GpuDetailsProps {
   gpu: GpuItem;
   onBack: () => void;
-  // Функцията за плащане може да приема детайли за транзакцията
+  // The payment function can accept transaction details
   onPay: (totalPrice: number, hours: number) => void; 
 }
 
@@ -12,9 +12,9 @@ const GpuDetails: React.FC<GpuDetailsProps> = ({ gpu, onBack, onPay }) => {
   const [rentHours, setRentHours] = useState<number>(1);
   const [isPaid, setIsPaid] = useState(false);
 
-  // Изчисляване на крайната цена
+  // Calculate final price
   const totalPrice = gpu.price * rentHours;
-  // Енергия = мощност (W) x часове / 1000
+  // Energy = power (W) x hours / 1000
   const energyKwh = (gpu.powerW * rentHours) / 1000;
 
   const handlePayment = () => {
@@ -25,50 +25,50 @@ const GpuDetails: React.FC<GpuDetailsProps> = ({ gpu, onBack, onPay }) => {
   return (
     <div style={styles.container}>
       <button onClick={onBack} style={styles.backBtn}>
-        &#8592; Назад към всички GPU
+        &#8592; Back to all GPUs
       </button>
 
       <div style={styles.card}>
         <div style={styles.grid}>
-          {/* Лява колона: Снимка и Спецификации */}
+          {/* Left column: Image and Specs */}
           <div>
             <img src={gpu.image} alt={gpu.type} onError={onImgError} style={styles.image} />
             <h2 style={styles.title}>{gpu.type}</h2>
             
             <div style={styles.infoBox}>
-              <h4 style={styles.infoTitle}>Технически характеристики:</h4>
+              <h4 style={styles.infoTitle}>Technical Specifications:</h4>
               <p style={styles.infoText}>{gpu.vramGb} GB VRAM · {gpu.powerW} W</p>
             </div>
 
             <div style={styles.infoBox}>
-              <h4 style={styles.infoTitle}>Собственик:</h4>
+              <h4 style={styles.infoTitle}>Owner:</h4>
               <p style={styles.infoText}>
-                {gpu.ownerUsername} · {gpu.ownerRating ? `★ ${gpu.ownerRating} / 5` : 'Още няма оценки'}
+                {gpu.ownerUsername} · {gpu.ownerRating ? `★ ${gpu.ownerRating} / 5` : 'No ratings yet'}
               </p>
             </div>
 
             <div style={styles.infoBox}>
-              <h4 style={styles.infoTitle}>Наличност и График:</h4>
+              <h4 style={styles.infoTitle}>Availability & Schedule:</h4>
               <p style={styles.infoText}>
-                🟢 <strong>Свободна за наемане:</strong> Всеки ден от {gpu.availableFrom} до {gpu.availableTo} ч.
+                🟢 <strong>Available for rent:</strong> Every day from {gpu.availableFrom} to {gpu.availableTo} h.
               </p>
               <p style={styles.infoText}>
-                Максимално време за наемане: <strong>{gpu.availableHours} часа</strong>
+                Maximum rental time: <strong>{gpu.availableHours} hours</strong>
               </p>
             </div>
           </div>
 
-          {/* Дясна колона: Ценообразуване и Плащане */}
+          {/* Right column: Pricing and Payment */}
           <div style={styles.checkoutSection}>
-            <h3 style={styles.checkoutTitle}>Детайли за наемане</h3>
+            <h3 style={styles.checkoutTitle}>Rental Details</h3>
             
             <div style={styles.priceRow}>
-              <span>Цена на час:</span>
+              <span>Price per hour:</span>
               <span style={styles.highlightPrice}>€{gpu.price.toFixed(2)}</span>
             </div>
 
             <div style={styles.inputGroup}>
-              <label style={styles.label}>За колко часа ще наемете машината?</label>
+              <label style={styles.label}>How many hours will you rent the machine?</label>
               <input 
                 type="number" 
                 min="1" 
@@ -82,22 +82,22 @@ const GpuDetails: React.FC<GpuDetailsProps> = ({ gpu, onBack, onPay }) => {
             </div>
 
             <div style={styles.priceRow}>
-              <span>Консумирана енергия:</span>
+              <span>Energy consumed:</span>
               <span>{energyKwh.toFixed(2)} kWh</span>
             </div>
 
             <div style={styles.totalRow}>
-              <span>Обща сума:</span>
+              <span>Total amount:</span>
               <span style={styles.totalPrice}>€{totalPrice.toFixed(2)}</span>
             </div>
 
             {isPaid ? (
               <div style={styles.successMessage}>
-                ✅ Успешно плащане! Машината е резервирана за {rentHours} ч.
+                ✅ Payment successful! The machine is reserved for {rentHours} h.
               </div>
             ) : (
               <button onClick={handlePayment} style={styles.payBtn}>
-                Плати €{totalPrice.toFixed(2)}
+                Pay €{totalPrice.toFixed(2)}
               </button>
             )}
           </div>
