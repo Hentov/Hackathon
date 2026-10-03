@@ -59,6 +59,7 @@ function App() {
           onSelectGpu={handleSelectGpu} 
         />
       )}
+      
     </div>
   );
 }
